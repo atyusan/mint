@@ -1,0 +1,434 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== RBAC SYSTEM =====
+
+enum UserType {
+  ADMIN
+  MERCHANT
+  INDIVIDUAL
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+model User {
+  id            String     @id @default(cuid())
+  email         String     @unique
+  phone         String?    @unique
+  firstName     String
+  lastName      String
+  userType      UserType
+  status        UserStatus @default(PENDING_VERIFICATION)
+  passwordHash  String
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  userRoles       UserRole[]
+  userPermissions UserPermission[]
+  merchant        Merchant?
+  individual      Individual?
+  createdBy       String?
+  createdByUser   User?            @relation("UserCreatedBy", fields: [createdBy], references: [id])
+  createdUsers    User[]           @relation("UserCreatedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userRoles   UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  resource    String // e.g., "invoice", "terminal", "analytics"
+  action      String // e.g., "create", "read", "update", "delete"
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  userPermissions UserPermission[]
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model UserRole {
+  id     String @id @default(cuid())
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+model UserPermission {
+  id           String @id @default(cuid())
+  userId       String
+  permissionId String
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permissionId])
+  @@map("user_permissions")
+}
+
+model RolePermission {
+  id           String @id @default(cuid())
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ===== MERCHANT & OUTLET MANAGEMENT =====
+
+model Merchant {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  businessName       String
+  businessType       String
+  registrationNumber String?
+  taxId              String?
+  address            String
+  city               String
+  state              String
+  country            String   @default("Nigeria")
+  website            String?
+  description        String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outlets      Outlet[]
+  payouts      Payout[]
+  PayoutMethod PayoutMethod[]
+
+  @@map("merchants")
+}
+
+model Individual {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  address   String?
+  city      String?
+  state     String?
+  country   String   @default("Nigeria")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("individuals")
+}
+
+model Outlet {
+  id         String   @id @default(cuid())
+  merchantId String
+  name       String
+  address    String
+  city       String
+  state      String
+  country    String   @default("Nigeria")
+  phone      String?
+  email      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  merchant  Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  terminals Terminal[]
+  invoices  Invoice[]
+
+  @@map("outlets")
+}
+
+// ===== TERMINAL MANAGEMENT =====
+
+enum TerminalStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  REPLACED
+  LOST
+}
+
+model Terminal {
+  id              String         @id @default(cuid())
+  outletId        String
+  serialNumber    String         @unique
+  model           String
+  status          TerminalStatus @default(ACTIVE)
+  location        String?
+  lastSeenAt      DateTime?
+  firmwareVersion String?
+  batteryLevel    Int?
+  isOnline        Boolean        @default(false)
+  metadata        Json?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relations
+  outlet   Outlet    @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  invoices Invoice[]
+
+  @@map("terminals")
+}
+
+// ===== PAYMENT CATEGORIES =====
+
+model PaymentCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  color       String? // Hex color for UI
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  invoices Invoice[]
+
+  @@map("payment_categories")
+}
+
+// ===== INVOICE & PAYMENT SYSTEM =====
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  PARTIALLY_PAID
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  MOBILE_MONEY
+  CASH
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  outletId      String
+  terminalId    String?
+  categoryId    String?
+  invoiceNumber String        @unique
+  customerEmail String?
+  customerPhone String?
+  customerName  String?
+  amount        Decimal       @db.Decimal(10, 2)
+  fee           Decimal       @default(0) @db.Decimal(10, 2)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  currency      String        @default("NGN")
+  status        InvoiceStatus @default(PENDING)
+  description   String?
+  dueDate       DateTime?
+  paidAt        DateTime?
+  expiresAt     DateTime?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  outlet   Outlet           @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  terminal Terminal?        @relation(fields: [terminalId], references: [id])
+  category PaymentCategory? @relation(fields: [categoryId], references: [id])
+  payments Payment[]
+
+  @@map("invoices")
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  invoiceId         String
+  amount            Decimal       @db.Decimal(10, 2)
+  fee               Decimal       @default(0) @db.Decimal(10, 2)
+  netAmount         Decimal       @db.Decimal(10, 2)
+  currency          String        @default("NGN")
+  method            PaymentMethod
+  reference         String        @unique
+  paystackReference String?
+  status            String // Success, Failed, Pending
+  processedAt       DateTime?
+  metadata          Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// ===== PAYOUT MANAGEMENT =====
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model PayoutMethod {
+  id            String   @id @default(cuid())
+  merchantId    String
+  methodType    String // BANK_ACCOUNT, MOBILE_MONEY, etc.
+  accountName   String
+  accountNumber String
+  bankCode      String?
+  bankName      String?
+  isDefault     Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  payouts  Payout[]
+
+  @@map("payout_methods")
+}
+
+model Payout {
+  id             String          @id @default(cuid())
+  merchantId     String
+  payoutMethodId String
+  amount         Decimal         @db.Decimal(10, 2)
+  fee            Decimal         @default(0) @db.Decimal(10, 2)
+  netAmount      Decimal         @db.Decimal(10, 2)
+  currency       String          @default("NGN")
+  status         PayoutStatus    @default(PENDING)
+  frequency      PayoutFrequency
+  reference      String          @unique
+  processedAt    DateTime?
+  scheduledFor   DateTime?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relations
+  merchant     Merchant     @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  payoutMethod PayoutMethod @relation(fields: [payoutMethodId], references: [id])
+
+  @@map("payouts")
+}
+
+// ===== PAYSTACK INTEGRATION =====
+
+model PaystackCustomer {
+  id                 String   @id @default(cuid())
+  merchantId         String? // For merchant customers
+  individualId       String? // For individual customers
+  paystackCustomerId String   @unique
+  customerCode       String   @unique
+  email              String
+  firstName          String?
+  lastName           String?
+  phone              String?
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("paystack_customers")
+}
+
+model PaystackInvoice {
+  id                String   @id @default(cuid())
+  invoiceId         String   @unique
+  paystackInvoiceId String   @unique
+  requestCode       String   @unique
+  status            String
+  amount            Decimal  @db.Decimal(10, 2)
+  currency          String   @default("NGN")
+  description       String?
+  lineItems         Json?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("paystack_invoices")
+}
+
+// ===== SYSTEM CONFIGURATION =====
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  type      String // STRING, NUMBER, BOOLEAN, JSON
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_config")
+}
+
+// ===== AUDIT LOG =====
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  oldValues  Json?
+  newValues  Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
