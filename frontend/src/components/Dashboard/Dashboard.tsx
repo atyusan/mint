@@ -23,12 +23,11 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/store';
 import {
-  getDashboardMetrics,
-  getRealTimeMetrics,
-  getRevenueTrends,
-  getTopOutlets,
-  getTopCategories,
-} from '../../store/slices/analyticsSlice';
+  getSummaryReport,
+  getTransactionReports,
+  getOutletPerformance,
+  getRevenueAnalysis,
+} from '../../store/slices/reportsSlice';
 import {
   LineChart,
   Line,
@@ -45,25 +44,25 @@ import {
 const Dashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const {
-    dashboardMetrics,
-    realTimeMetrics,
-    revenueTrends,
-    topOutlets,
-    topCategories,
-  } = useSelector((state: RootState) => state.analytics);
-  const { loading } = useSelector((state: RootState) => state.analytics);
+    summaryData,
+    transactionReports,
+    outletPerformance,
+    revenueAnalysis,
+    loading,
+  } = useSelector((state: RootState) => state.reports);
 
   useEffect(() => {
-    dispatch(getDashboardMetrics({}));
-    dispatch(getRealTimeMetrics({}));
-    dispatch(getRevenueTrends({ days: 30 }));
-    dispatch(getTopOutlets({ limit: 5 }));
-    dispatch(getTopCategories({ limit: 5 }));
+    dispatch(getSummaryReport({}));
+    dispatch(getTransactionReports({}));
+    dispatch(getOutletPerformance({}));
+    dispatch(getRevenueAnalysis({}));
   }, [dispatch]);
 
   const handleRefresh = () => {
-    dispatch(getDashboardMetrics({}));
-    dispatch(getRealTimeMetrics({}));
+    dispatch(getSummaryReport({}));
+    dispatch(getTransactionReports({}));
+    dispatch(getOutletPerformance({}));
+    dispatch(getRevenueAnalysis({}));
   };
 
   const formatCurrency = (amount: number) => {
@@ -122,30 +121,19 @@ const Dashboard: React.FC = () => {
                     Total Revenue
                   </Typography>
                   <Typography variant='h4' component='div'>
-                    {formatCurrency(dashboardMetrics?.revenue.total || 0)}
+                    {formatCurrency(summaryData?.totalRevenue || 0)}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                    {realTimeMetrics?.growth.revenue &&
-                    realTimeMetrics.growth.revenue > 0 ? (
-                      <TrendingUpIcon color='success' fontSize='small' />
-                    ) : (
-                      <TrendingDownIcon color='error' fontSize='small' />
-                    )}
+                    <TrendingUpIcon color='success' fontSize='small' />
                     <Typography
                       variant='body2'
-                      color={
-                        realTimeMetrics?.growth.revenue &&
-                        realTimeMetrics.growth.revenue > 0
-                          ? 'success.main'
-                          : 'error.main'
-                      }
+                      color='success.main'
                       sx={{ ml: 0.5 }}
                     >
-                      {realTimeMetrics?.growth.revenue
-                        ? `${Math.abs(realTimeMetrics.growth.revenue).toFixed(
-                            1
-                          )}%`
-                        : '0%'}
+                      {summaryData?.successRate
+                        ? `${summaryData.successRate.toFixed(1)}%`
+                        : '0%'}{' '}
+                      success rate
                     </Typography>
                   </Box>
                 </Box>
@@ -174,14 +162,14 @@ const Dashboard: React.FC = () => {
                     Total Invoices
                   </Typography>
                   <Typography variant='h4' component='div'>
-                    {formatNumber(
-                      dashboardMetrics?.overview.totalInvoices || 0
-                    )}
+                    {formatNumber(summaryData?.totalTransactions || 0)}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <Typography variant='body2' color='textSecondary'>
-                      {dashboardMetrics?.overview.successRate.toFixed(1)}%
-                      success rate
+                      {summaryData?.averageTransaction
+                        ? `₦${summaryData.averageTransaction.toLocaleString()}`
+                        : '₦0'}{' '}
+                      avg
                     </Typography>
                   </Box>
                 </Box>
@@ -210,11 +198,11 @@ const Dashboard: React.FC = () => {
                     Active Terminals
                   </Typography>
                   <Typography variant='h4' component='div'>
-                    {realTimeMetrics?.today.activeTerminals || 0}
+                    {outletPerformance?.length || 0}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <Typography variant='body2' color='textSecondary'>
-                      Online now
+                      Active outlets
                     </Typography>
                   </Box>
                 </Box>
@@ -243,11 +231,13 @@ const Dashboard: React.FC = () => {
                     Pending Payouts
                   </Typography>
                   <Typography variant='h4' component='div'>
-                    {realTimeMetrics?.today.pendingPayouts || 0}
+                    {summaryData?.totalFees
+                      ? `₦${(summaryData.totalFees / 1000).toFixed(0)}K`
+                      : '₦0'}
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                     <Typography variant='body2' color='textSecondary'>
-                      Awaiting processing
+                      Platform fees
                     </Typography>
                   </Box>
                 </Box>
@@ -269,7 +259,7 @@ const Dashboard: React.FC = () => {
             </Typography>
             <Box sx={{ height: 300 }}>
               <ResponsiveContainer width='100%' height='100%'>
-                <LineChart data={revenueTrends?.daily || []}>
+                <LineChart data={revenueAnalysis || []}>
                   <CartesianGrid strokeDasharray='3 3' />
                   <XAxis dataKey='date' />
                   <YAxis />
@@ -278,19 +268,19 @@ const Dashboard: React.FC = () => {
                   />
                   <Line
                     type='monotone'
-                    dataKey='total'
+                    dataKey='revenue'
                     stroke='#8884d8'
                     strokeWidth={2}
                   />
                   <Line
                     type='monotone'
-                    dataKey='paid'
+                    dataKey='netRevenue'
                     stroke='#82ca9d'
                     strokeWidth={2}
                   />
                   <Line
                     type='monotone'
-                    dataKey='pending'
+                    dataKey='fees'
                     stroke='#ffc658'
                     strokeWidth={2}
                   />
@@ -303,19 +293,17 @@ const Dashboard: React.FC = () => {
         <Grid size={{ xs: 12, md: 4 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant='h6' gutterBottom>
-              Revenue by Category
+              Revenue by Outlet
             </Typography>
             <Box sx={{ height: 300 }}>
               <ResponsiveContainer width='100%' height='100%'>
                 <PieChart>
                   <Pie
-                    data={(revenueTrends?.byCategory || []).map(
-                      (item: any) => ({
-                        name: item.name,
-                        value: item.total,
-                        ...item,
-                      })
-                    )}
+                    data={(outletPerformance || []).map((item: any) => ({
+                      name: item.name,
+                      value: item.revenue,
+                      ...item,
+                    }))}
                     cx='50%'
                     cy='50%'
                     labelLine={false}
@@ -326,7 +314,7 @@ const Dashboard: React.FC = () => {
                     fill='#8884d8'
                     dataKey='value'
                   >
-                    {(revenueTrends?.byCategory || []).map((entry, index) => (
+                    {(outletPerformance || []).map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={COLORS[index % COLORS.length]}
@@ -351,7 +339,7 @@ const Dashboard: React.FC = () => {
               Top Performing Outlets
             </Typography>
             <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-              {topOutlets.map((outlet, index) => (
+              {(outletPerformance || []).map((outlet, index) => (
                 <Box
                   key={outlet.id}
                   sx={{
@@ -367,15 +355,15 @@ const Dashboard: React.FC = () => {
                       {outlet.name}
                     </Typography>
                     <Typography variant='body2' color='textSecondary'>
-                      {outlet.city}, {outlet.state}
+                      {outlet.transactions} transactions
                     </Typography>
                     <Typography variant='body2' color='textSecondary'>
-                      {outlet.invoiceCount} invoices
+                      {outlet.successRate.toFixed(1)}% success rate
                     </Typography>
                   </Box>
                   <Box sx={{ textAlign: 'right' }}>
                     <Typography variant='h6' color='primary'>
-                      {formatCurrency(outlet.totalRevenue)}
+                      {formatCurrency(outlet.revenue)}
                     </Typography>
                     <Chip
                       label={`#${index + 1}`}
@@ -392,52 +380,49 @@ const Dashboard: React.FC = () => {
         <Grid size={{ xs: 12, md: 6 }}>
           <Paper sx={{ p: 3 }}>
             <Typography variant='h6' gutterBottom>
-              Top Categories
+              Recent Transactions
             </Typography>
             <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-              {topCategories.map((category, index) => (
-                <Box
-                  key={category.id}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    py: 2,
-                    borderBottom: '1px solid #eee',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: '50%',
-                        backgroundColor:
-                          category.color || COLORS[index % COLORS.length],
-                        mr: 2,
-                      }}
-                    />
+              {(transactionReports || [])
+                .slice(0, 5)
+                .map((transaction, index) => (
+                  <Box
+                    key={transaction.id}
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      py: 2,
+                      borderBottom: '1px solid #eee',
+                    }}
+                  >
                     <Box>
                       <Typography variant='subtitle1' fontWeight='bold'>
-                        {category.name}
+                        {transaction.method}
                       </Typography>
                       <Typography variant='body2' color='textSecondary'>
-                        {category.invoiceCount} invoices
+                        {transaction.date}
+                      </Typography>
+                      <Typography variant='body2' color='textSecondary'>
+                        Terminal: {transaction.terminal}
                       </Typography>
                     </Box>
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant='h6' color='primary'>
+                        {formatCurrency(transaction.amount)}
+                      </Typography>
+                      <Chip
+                        label={transaction.status}
+                        size='small'
+                        color={
+                          transaction.status === 'completed'
+                            ? 'success'
+                            : 'warning'
+                        }
+                      />
+                    </Box>
                   </Box>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant='h6' color='primary'>
-                      {formatCurrency(category.totalRevenue)}
-                    </Typography>
-                    <Chip
-                      label={`#${index + 1}`}
-                      size='small'
-                      color='primary'
-                    />
-                  </Box>
-                </Box>
-              ))}
+                ))}
             </Box>
           </Paper>
         </Grid>

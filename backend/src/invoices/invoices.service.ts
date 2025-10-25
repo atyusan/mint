@@ -38,6 +38,24 @@ export class InvoicesService {
       throw new NotFoundException('Outlet not found');
     }
 
+    // Verify merchant is active
+    if (outlet.merchant.user.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        'Cannot create invoice for inactive merchant'
+      );
+    }
+
+    // Verify outlet has at least one terminal
+    const outletTerminals = await this.prisma.terminal.findMany({
+      where: { outletId },
+    });
+
+    if (outletTerminals.length === 0) {
+      throw new BadRequestException(
+        'Cannot create invoice for outlet without terminals'
+      );
+    }
+
     // Verify terminal exists and belongs to outlet
     if (terminalId) {
       const terminal = await this.prisma.terminal.findUnique({
@@ -141,7 +159,7 @@ export class InvoicesService {
           requestCode: paystackInvoice.request_code,
           status: paystackInvoice.status,
           amount: totalAmount,
-          currency: 'NGN',
+          currency: invoiceData.currency || 'NGN',
           description: invoiceData.description,
           lineItems: paymentRequestData.line_items,
         },
@@ -169,7 +187,10 @@ export class InvoicesService {
     categoryId?: string,
     merchantId?: string
   ) {
-    const skip = (page - 1) * limit;
+    // Ensure page and limit are valid numbers
+    const validPage = isNaN(page) || page < 1 ? 1 : page;
+    const validLimit = isNaN(limit) || limit < 1 ? 10 : limit;
+    const skip = (validPage - 1) * validLimit;
 
     const where: any = {};
 
@@ -195,7 +216,7 @@ export class InvoicesService {
       this.prisma.invoice.findMany({
         where,
         skip,
-        take: limit,
+        take: validLimit,
         include: {
           outlet: {
             include: {

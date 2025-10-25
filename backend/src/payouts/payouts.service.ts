@@ -6,13 +6,20 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PayoutStatus, PayoutFrequency } from '@prisma/client';
-import { CreatePayoutDto, CreatePayoutMethodDto, UpdatePayoutMethodDto } from './dto';
+import {
+  CreatePayoutDto,
+  CreatePayoutMethodDto,
+  UpdatePayoutMethodDto,
+} from './dto';
 
 @Injectable()
 export class PayoutsService {
   constructor(private prisma: PrismaService) {}
 
-  async createPayoutMethod(createPayoutMethodDto: CreatePayoutMethodDto, merchantId: string) {
+  async createPayoutMethod(
+    createPayoutMethodDto: CreatePayoutMethodDto,
+    merchantId: string
+  ) {
     const { isDefault, ...methodData } = createPayoutMethodDto;
 
     // If this is set as default, unset other default methods
@@ -45,10 +52,7 @@ export class PayoutsService {
         merchantId,
         isActive: true,
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -70,7 +74,7 @@ export class PayoutsService {
   async updatePayoutMethod(
     id: string,
     updatePayoutMethodDto: UpdatePayoutMethodDto,
-    merchantId: string,
+    merchantId: string
   ) {
     const payoutMethod = await this.getPayoutMethodById(id, merchantId);
 
@@ -127,7 +131,7 @@ export class PayoutsService {
 
     if (pendingPayouts > 0) {
       throw new BadRequestException(
-        'Cannot delete payout method with pending payouts. Please wait for payouts to complete.',
+        'Cannot delete payout method with pending payouts. Please wait for payouts to complete.'
       );
     }
 
@@ -145,7 +149,10 @@ export class PayoutsService {
     const { payoutMethodId, frequency, ...payoutData } = createPayoutDto;
 
     // Verify payout method belongs to merchant
-    const payoutMethod = await this.getPayoutMethodById(payoutMethodId, merchantId);
+    const payoutMethod = await this.getPayoutMethodById(
+      payoutMethodId,
+      merchantId
+    );
 
     // Calculate scheduled date based on frequency
     const scheduledFor = this.calculateScheduledDate(frequency);
@@ -172,9 +179,12 @@ export class PayoutsService {
     page: number = 1,
     limit: number = 10,
     status?: PayoutStatus,
-    frequency?: PayoutFrequency,
+    frequency?: PayoutFrequency
   ) {
-    const skip = (page - 1) * limit;
+    // Ensure page and limit are valid numbers
+    const validPage = isNaN(page) || page < 1 ? 1 : page;
+    const validLimit = isNaN(limit) || limit < 1 ? 10 : limit;
+    const skip = (validPage - 1) * validLimit;
 
     const where: any = {
       merchantId,
@@ -192,7 +202,7 @@ export class PayoutsService {
       this.prisma.payout.findMany({
         where,
         skip,
-        take: limit,
+        take: validLimit,
         include: {
           payoutMethod: true,
         },
@@ -274,7 +284,8 @@ export class PayoutsService {
       totalAmount: totalAmount._sum.amount || 0,
       pendingAmount: pendingAmount._sum.amount || 0,
       completedAmount: completedAmount._sum.amount || 0,
-      successRate: totalPayouts > 0 ? (completedPayouts / totalPayouts) * 100 : 0,
+      successRate:
+        totalPayouts > 0 ? (completedPayouts / totalPayouts) * 100 : 0,
     };
   }
 
@@ -300,7 +311,11 @@ export class PayoutsService {
         await this.processPayout(payout);
         results.push({ payoutId: payout.id, status: 'success' });
       } catch (error) {
-        results.push({ payoutId: payout.id, status: 'failed', error: error.message });
+        results.push({
+          payoutId: payout.id,
+          status: 'failed',
+          error: error.message,
+        });
       }
     }
 
@@ -317,7 +332,7 @@ export class PayoutsService {
     try {
       // TODO: Integrate with actual payout provider (bank API, mobile money, etc.)
       // For now, we'll simulate processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Update status to completed
       await this.prisma.payout.update({
@@ -383,7 +398,9 @@ export class PayoutsService {
 
     let sequence = 1;
     if (lastPayout) {
-      const lastSequence = parseInt(lastPayout.reference.split('-')[1].slice(8));
+      const lastSequence = parseInt(
+        lastPayout.reference.split('-')[1].slice(8)
+      );
       sequence = lastSequence + 1;
     }
 

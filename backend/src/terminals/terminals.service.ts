@@ -12,7 +12,10 @@ import { CreateTerminalDto, UpdateTerminalDto, AssignTerminalDto } from './dto';
 export class TerminalsService {
   constructor(private prisma: PrismaService) {}
 
-  async createTerminal(createTerminalDto: CreateTerminalDto, createdBy: string) {
+  async createTerminal(
+    createTerminalDto: CreateTerminalDto,
+    createdBy: string
+  ) {
     const { outletId, ...terminalData } = createTerminalDto;
 
     // Verify outlet exists and user has access
@@ -37,7 +40,9 @@ export class TerminalsService {
     });
 
     if (existingTerminal) {
-      throw new BadRequestException('Terminal with this serial number already exists');
+      throw new BadRequestException(
+        'Terminal with this serial number already exists'
+      );
     }
 
     const terminal = await this.prisma.terminal.create({
@@ -48,7 +53,14 @@ export class TerminalsService {
     });
 
     // Log the creation
-    await this.logTerminalAction(createdBy, 'CREATE', 'TERMINAL', terminal.id, null, terminal);
+    await this.logTerminalAction(
+      createdBy,
+      'CREATE',
+      'TERMINAL',
+      terminal.id,
+      null,
+      terminal
+    );
 
     return this.getTerminalById(terminal.id);
   }
@@ -58,9 +70,12 @@ export class TerminalsService {
     limit: number = 10,
     outletId?: string,
     status?: TerminalStatus,
-    merchantId?: string,
+    merchantId?: string
   ) {
-    const skip = (page - 1) * limit;
+    // Ensure page and limit are valid numbers
+    const validPage = isNaN(page) || page < 1 ? 1 : page;
+    const validLimit = isNaN(limit) || limit < 1 ? 10 : limit;
+    const skip = (validPage - 1) * validLimit;
 
     const where: any = {};
 
@@ -82,7 +97,7 @@ export class TerminalsService {
       this.prisma.terminal.findMany({
         where,
         skip,
-        take: limit,
+        take: validLimit,
         include: {
           outlet: {
             include: {
@@ -137,7 +152,11 @@ export class TerminalsService {
     return terminal;
   }
 
-  async updateTerminal(id: string, updateTerminalDto: UpdateTerminalDto, updatedBy: string) {
+  async updateTerminal(
+    id: string,
+    updateTerminalDto: UpdateTerminalDto,
+    updatedBy: string
+  ) {
     const terminal = await this.getTerminalById(id);
 
     const updatedTerminal = await this.prisma.terminal.update({
@@ -160,12 +179,23 @@ export class TerminalsService {
     });
 
     // Log the update
-    await this.logTerminalAction(updatedBy, 'UPDATE', 'TERMINAL', id, terminal, updatedTerminal);
+    await this.logTerminalAction(
+      updatedBy,
+      'UPDATE',
+      'TERMINAL',
+      id,
+      terminal,
+      updatedTerminal
+    );
 
     return updatedTerminal;
   }
 
-  async updateTerminalStatus(id: string, status: TerminalStatus, updatedBy: string) {
+  async updateTerminalStatus(
+    id: string,
+    status: TerminalStatus,
+    updatedBy: string
+  ) {
     const terminal = await this.getTerminalById(id);
 
     const updatedTerminal = await this.prisma.terminal.update({
@@ -185,12 +215,23 @@ export class TerminalsService {
     });
 
     // Log the status change
-    await this.logTerminalAction(updatedBy, 'UPDATE_STATUS', 'TERMINAL', id, terminal, updatedTerminal);
+    await this.logTerminalAction(
+      updatedBy,
+      'UPDATE_STATUS',
+      'TERMINAL',
+      id,
+      terminal,
+      updatedTerminal
+    );
 
     return updatedTerminal;
   }
 
-  async assignTerminal(terminalId: string, assignTerminalDto: AssignTerminalDto, assignedBy: string) {
+  async assignTerminal(
+    terminalId: string,
+    assignTerminalDto: AssignTerminalDto,
+    assignedBy: string
+  ) {
     const { outletId } = assignTerminalDto;
 
     const terminal = await this.getTerminalById(terminalId);
@@ -226,7 +267,14 @@ export class TerminalsService {
     });
 
     // Log the assignment
-    await this.logTerminalAction(assignedBy, 'ASSIGN', 'TERMINAL', terminalId, terminal, updatedTerminal);
+    await this.logTerminalAction(
+      assignedBy,
+      'ASSIGN',
+      'TERMINAL',
+      terminalId,
+      terminal,
+      updatedTerminal
+    );
 
     return updatedTerminal;
   }
@@ -251,7 +299,14 @@ export class TerminalsService {
     });
 
     // Log the metadata update
-    await this.logTerminalAction(updatedBy, 'UPDATE_METADATA', 'TERMINAL', id, terminal, updatedTerminal);
+    await this.logTerminalAction(
+      updatedBy,
+      'UPDATE_METADATA',
+      'TERMINAL',
+      id,
+      terminal,
+      updatedTerminal
+    );
 
     return updatedTerminal;
   }
@@ -293,7 +348,8 @@ export class TerminalsService {
         pendingInvoices,
         totalAmount: totalAmount._sum.amount || 0,
         paidAmount: paidAmount._sum.amount || 0,
-        successRate: totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0,
+        successRate:
+          totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0,
       },
     };
   }
@@ -333,7 +389,7 @@ export class TerminalsService {
 
     if (activeInvoices > 0) {
       throw new BadRequestException(
-        'Cannot delete terminal with active invoices. Please cancel or complete all invoices first.',
+        'Cannot delete terminal with active invoices. Please cancel or complete all invoices first.'
       );
     }
 
@@ -342,7 +398,14 @@ export class TerminalsService {
     });
 
     // Log the deletion
-    await this.logTerminalAction(deletedBy, 'DELETE', 'TERMINAL', id, terminal, null);
+    await this.logTerminalAction(
+      deletedBy,
+      'DELETE',
+      'TERMINAL',
+      id,
+      terminal,
+      null
+    );
 
     return { message: 'Terminal deleted successfully' };
   }
@@ -353,7 +416,7 @@ export class TerminalsService {
     resource: string,
     resourceId: string,
     oldValues: any,
-    newValues: any,
+    newValues: any
   ) {
     await this.prisma.auditLog.create({
       data: {

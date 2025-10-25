@@ -22,8 +22,10 @@ import {
   Dashboard as DashboardIcon,
   Receipt as ReceiptIcon,
   Devices as DevicesIcon,
-  Analytics as AnalyticsIcon,
+  Assessment as ReportsIcon,
   AccountBalance as AccountBalanceIcon,
+  Business as BusinessIcon,
+  Person as PersonIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material';
@@ -70,8 +72,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Invoices', icon: <ReceiptIcon />, path: '/invoices' },
     { text: 'Terminals', icon: <DevicesIcon />, path: '/terminals' },
-    { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
+    { text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
     { text: 'Payouts', icon: <AccountBalanceIcon />, path: '/payouts' },
+    { text: 'Merchants', icon: <BusinessIcon />, path: '/merchants' },
+    { text: 'My Profile', icon: <PersonIcon />, path: '/merchant-profile' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 

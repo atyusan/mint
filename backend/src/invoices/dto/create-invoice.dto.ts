@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEmail, IsDateString, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsEmail,
+  IsDateString,
+  Min,
+} from 'class-validator';
 
 export class CreateInvoiceDto {
   @IsString()
@@ -28,6 +36,10 @@ export class CreateInvoiceDto {
   @IsNumber()
   @Min(0.01)
   amount: number;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
 
   @IsOptional()
   @IsString()

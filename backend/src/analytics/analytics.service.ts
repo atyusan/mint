@@ -5,7 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
-  async getDashboardMetrics(merchantId?: string, outletId?: string, categoryId?: string) {
+  async getDashboardMetrics(
+    merchantId?: string,
+    outletId?: string,
+    categoryId?: string
+  ) {
     const where: any = {};
 
     if (merchantId) {
@@ -66,8 +70,10 @@ export class AnalyticsService {
       }),
     ]);
 
-    const successRate = totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0;
-    const averageInvoiceValue = totalInvoices > 0 ? Number(totalRevenue._sum.amount) / totalInvoices : 0;
+    const successRate =
+      totalInvoices > 0 ? (paidInvoices / totalInvoices) * 100 : 0;
+    const averageInvoiceValue =
+      totalInvoices > 0 ? Number(totalRevenue._sum.amount) / totalInvoices : 0;
 
     return {
       overview: {
@@ -92,10 +98,18 @@ export class AnalyticsService {
     merchantId?: string,
     outletId?: string,
     categoryId?: string,
-    days: number = 30,
+    days: number = 30
   ) {
+    // Ensure days is a valid number
+    const validDays = isNaN(days) || days < 1 ? 30 : days;
+
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - validDays);
+
+    // Validate the date
+    if (isNaN(startDate.getTime())) {
+      throw new Error('Invalid date calculation');
+    }
 
     const where: any = {
       createdAt: {
@@ -138,7 +152,7 @@ export class AnalyticsService {
 
     invoices.forEach((invoice) => {
       const date = invoice.createdAt.toISOString().split('T')[0];
-      
+
       if (!dailyRevenue.has(date)) {
         dailyRevenue.set(date, {
           date,
@@ -211,7 +225,10 @@ export class AnalyticsService {
     });
 
     const outletPerformance = outlets.map((outlet) => {
-      const totalRevenue = outlet.invoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
+      const totalRevenue = outlet.invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.amount),
+        0
+      );
       const invoiceCount = outlet._count.invoices;
 
       return {
@@ -231,7 +248,11 @@ export class AnalyticsService {
       .slice(0, limit);
   }
 
-  async getTopPerformingCategories(merchantId?: string, outletId?: string, limit: number = 10) {
+  async getTopPerformingCategories(
+    merchantId?: string,
+    outletId?: string,
+    limit: number = 10
+  ) {
     const where: any = {};
 
     if (merchantId) {
@@ -262,7 +283,10 @@ export class AnalyticsService {
     });
 
     const categoryPerformance = categories.map((category) => {
-      const totalRevenue = category.invoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
+      const totalRevenue = category.invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.amount),
+        0
+      );
       const invoiceCount = category._count.invoices;
 
       return {
@@ -326,7 +350,9 @@ export class AnalyticsService {
       stats.netAmount += Number(payment.netAmount);
     });
 
-    return Array.from(methodStats.values()).sort((a, b) => b.totalAmount - a.totalAmount);
+    return Array.from(methodStats.values()).sort(
+      (a, b) => b.totalAmount - a.totalAmount
+    );
   }
 
   async getTerminalPerformance(merchantId?: string, outletId?: string) {
@@ -367,7 +393,10 @@ export class AnalyticsService {
     });
 
     return terminals.map((terminal) => {
-      const totalRevenue = terminal.invoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
+      const totalRevenue = terminal.invoices.reduce(
+        (sum, invoice) => sum + Number(invoice.amount),
+        0
+      );
       const invoiceCount = terminal._count.invoices;
 
       return {
@@ -458,12 +487,16 @@ export class AnalyticsService {
       }),
     ]);
 
-    const invoiceGrowth = yesterdayInvoices > 0 
-      ? ((todayInvoices - yesterdayInvoices) / yesterdayInvoices) * 100 
-      : 0;
+    const invoiceGrowth =
+      yesterdayInvoices > 0
+        ? ((todayInvoices - yesterdayInvoices) / yesterdayInvoices) * 100
+        : 0;
 
-    const revenueGrowth = yesterdayRevenue._sum.amount 
-      ? ((Number(todayRevenue._sum.amount) - Number(yesterdayRevenue._sum.amount)) / Number(yesterdayRevenue._sum.amount)) * 100 
+    const revenueGrowth = yesterdayRevenue._sum.amount
+      ? ((Number(todayRevenue._sum.amount) -
+          Number(yesterdayRevenue._sum.amount)) /
+          Number(yesterdayRevenue._sum.amount)) *
+        100
       : 0;
 
     return {

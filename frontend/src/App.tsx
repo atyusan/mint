@@ -13,13 +13,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from './store/store';
 import { initializeAuth } from './store/slices/authSlice';
 import DashboardLayout from './components/Layout/DashboardLayout';
-import Dashboard from './components/Dashboard/Dashboard';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
-import Invoices from './components/Invoices/Invoices';
-import Terminals from './components/Terminals/Terminals';
-import Analytics from './components/Analytics/Analytics';
-import Payouts from './components/Payouts/Payouts';
+import {
+  DashboardPage,
+  InvoicesPage,
+  TerminalsPage,
+  ReportsPage,
+  PayoutsPage,
+  MerchantsPage,
+  MerchantProfilePage,
+  MerchantOnboardingPage,
+} from './pages';
 
 const theme = createTheme({
   palette: {
@@ -60,11 +65,17 @@ const AppRoutes: React.FC = () => {
   return (
     <DashboardLayout>
       <Routes>
-        <Route path='/dashboard' element={<Dashboard />} />
-        <Route path='/invoices' element={<Invoices />} />
-        <Route path='/terminals' element={<Terminals />} />
-        <Route path='/analytics' element={<Analytics />} />
-        <Route path='/payouts' element={<Payouts />} />
+        <Route path='/dashboard' element={<DashboardPage />} />
+        <Route path='/invoices' element={<InvoicesPage />} />
+        <Route path='/terminals' element={<TerminalsPage />} />
+        <Route path='/reports' element={<ReportsPage />} />
+        <Route path='/payouts' element={<PayoutsPage />} />
+        <Route path='/merchants' element={<MerchantsPage />} />
+        <Route path='/merchant-profile' element={<MerchantProfilePage />} />
+        <Route
+          path='/merchant-onboarding'
+          element={<MerchantOnboardingPage />}
+        />
         <Route path='/' element={<Navigate to='/dashboard' replace />} />
         <Route path='*' element={<Navigate to='/dashboard' replace />} />
       </Routes>

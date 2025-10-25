@@ -4,16 +4,16 @@ import merchantReducer from './slices/merchantSlice';
 import invoiceReducer from './slices/invoiceSlice';
 import terminalReducer from './slices/terminalSlice';
 import payoutReducer from './slices/payoutSlice';
-import analyticsReducer from './slices/analyticsSlice';
+import reportsReducer from './slices/reportsSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    merchant: merchantReducer,
+    merchants: merchantReducer,
     invoice: invoiceReducer,
     terminal: terminalReducer,
     payout: payoutReducer,
-    analytics: analyticsReducer,
+    reports: reportsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

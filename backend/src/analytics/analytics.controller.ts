@@ -20,6 +20,29 @@ export class AnalyticsController {
     const userMerchantId = req.user.merchant?.id;
     const finalMerchantId = merchantId || userMerchantId;
 
+    if (!finalMerchantId) {
+      // Return empty dashboard data for users without merchant association
+      return {
+        overview: {
+          totalInvoices: 0,
+          totalRevenue: 0,
+          totalFees: 0,
+          netRevenue: 0,
+          successRate: 0,
+          averageTransaction: 0,
+        },
+        revenue: {
+          total: 0,
+          paid: 0,
+          pending: 0,
+          fees: 0,
+          net: 0,
+        },
+        message:
+          'No merchant association found. Please contact support to set up your merchant account.',
+      };
+    }
+
     return this.analyticsService.getDashboardMetrics(
       finalMerchantId,
       outletId,
@@ -38,6 +61,15 @@ export class AnalyticsController {
   ) {
     const userMerchantId = req.user.merchant?.id;
     const finalMerchantId = merchantId || userMerchantId;
+
+    if (!finalMerchantId) {
+      // Return empty revenue trends for users without merchant association
+      return {
+        data: [],
+        message:
+          'No merchant association found. Please contact support to set up your merchant account.',
+      };
+    }
 
     return this.analyticsService.getRevenueTrends(
       finalMerchantId,
@@ -58,7 +90,13 @@ export class AnalyticsController {
     const finalMerchantId = merchantId || userMerchantId;
 
     if (!finalMerchantId) {
-      throw new Error('Merchant ID is required');
+      // Return empty data for users without merchant association
+      return {
+        data: [],
+        total: 0,
+        message:
+          'No merchant association found. Please contact support to set up your merchant account.',
+      };
     }
 
     return this.analyticsService.getTopPerformingOutlets(
@@ -110,6 +148,15 @@ export class AnalyticsController {
   ) {
     const userMerchantId = req.user.merchant?.id;
     const finalMerchantId = merchantId || userMerchantId;
+
+    if (!finalMerchantId) {
+      // Return empty terminal performance data for users without merchant association
+      return {
+        data: [],
+        message:
+          'No merchant association found. Please contact support to set up your merchant account.',
+      };
+    }
 
     return this.analyticsService.getTerminalPerformance(
       finalMerchantId,

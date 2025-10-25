@@ -1,30 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import api from '../../api/api';
-
-interface Outlet {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  phone?: string;
-  email?: string;
-  isActive: boolean;
-  terminals: Terminal[];
-}
-
-interface Terminal {
-  id: string;
-  serialNumber: string;
-  model: string;
-  status: string;
-  location?: string;
-  isOnline: boolean;
-  lastSeenAt?: string;
-}
+import { api } from '../../api/api';
 
 interface Merchant {
   id: string;
+  userId: string;
   businessName: string;
   businessType: string;
   registrationNumber?: string;
@@ -36,246 +15,302 @@ interface Merchant {
   website?: string;
   description?: string;
   isActive: boolean;
-  outlets: Outlet[];
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    status: string;
+    lastLoginAt?: string;
+  };
+  outlets: Array<{
+    id: string;
+    name: string;
+    isActive: boolean;
+  }>;
+  _count: {
+    outlets: number;
+    payouts: number;
+  };
+}
+
+interface MerchantStats {
+  totalOutlets: number;
+  activeOutlets: number;
+  totalTerminals: number;
+  activeTerminals: number;
+  totalInvoices: number;
+  paidInvoices: number;
+  totalRevenue: number;
+  successRate: number;
+}
+
+interface MerchantFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  businessType?: string;
 }
 
 interface MerchantState {
-  merchant: Merchant | null;
-  outlets: Outlet[];
-  terminals: Terminal[];
+  merchants: Merchant[];
+  currentMerchant: Merchant | null;
+  merchantStats: MerchantStats | null;
   loading: boolean;
   error: string | null;
+  filters: MerchantFilters;
+  total: number;
+  page: number;
+  limit: number;
 }
 
 const initialState: MerchantState = {
-  merchant: null,
-  outlets: [],
-  terminals: [],
+  merchants: [],
+  currentMerchant: null,
+  merchantStats: null,
   loading: false,
   error: null,
+  filters: {
+    page: 1,
+    limit: 10,
+  },
+  total: 0,
+  page: 1,
+  limit: 10,
 };
 
-export const getMerchantProfile = createAsyncThunk(
-  'merchant/getProfile',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await api.get('/merchants/profile');
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to get merchant profile'
-      );
-    }
+// Async thunks
+export const getMerchants = createAsyncThunk(
+  'merchants/getMerchants',
+  async (filters: MerchantFilters = {}) => {
+    const response = await api.get('/merchants', { params: filters });
+    return response.data;
   }
 );
 
-export const getOutlets = createAsyncThunk(
-  'merchant/getOutlets',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await api.get('/outlets');
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to get outlets'
-      );
-    }
+export const getMerchantById = createAsyncThunk(
+  'merchants/getMerchantById',
+  async (id: string) => {
+    const response = await api.get(`/merchants/${id}`);
+    return response.data;
   }
 );
 
-export const createOutlet = createAsyncThunk(
-  'merchant/createOutlet',
-  async (
-    outletData: {
-      name: string;
-      address: string;
-      city: string;
-      state: string;
-      phone?: string;
-      email?: string;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await api.post('/outlets', outletData);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to create outlet'
-      );
-    }
+export const getMyMerchant = createAsyncThunk(
+  'merchants/getMyMerchant',
+  async () => {
+    const response = await api.get('/merchants/my-merchant');
+    return response.data;
   }
 );
 
-export const updateOutlet = createAsyncThunk(
-  'merchant/updateOutlet',
-  async (
-    { id, ...updateData }: { id: string } & Partial<Outlet>,
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await api.put(`/outlets/${id}`, updateData);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to update outlet'
-      );
-    }
+export const getMerchantStats = createAsyncThunk(
+  'merchants/getMerchantStats',
+  async (id?: string) => {
+    const endpoint = id
+      ? `/merchants/${id}/stats`
+      : '/merchants/my-merchant/stats';
+    const response = await api.get(endpoint);
+    return response.data;
   }
 );
 
-export const getTerminals = createAsyncThunk(
-  'merchant/getTerminals',
-  async (outletId: string | undefined, { rejectWithValue }) => {
-    try {
-      const url = outletId ? `/terminals?outletId=${outletId}` : '/terminals';
-      const response = await api.get(url);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to get terminals'
-      );
-    }
+export const createMerchant = createAsyncThunk(
+  'merchants/createMerchant',
+  async (merchantData: any) => {
+    const response = await api.post('/merchants', merchantData);
+    return response.data;
   }
 );
 
-export const createTerminal = createAsyncThunk(
-  'merchant/createTerminal',
-  async (
-    terminalData: {
-      outletId: string;
-      serialNumber: string;
-      model: string;
-      location?: string;
-    },
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await api.post('/terminals', terminalData);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to create terminal'
-      );
-    }
+export const updateMerchant = createAsyncThunk(
+  'merchants/updateMerchant',
+  async ({ id, data }: { id: string; data: any }) => {
+    const response = await api.put(`/merchants/${id}`, data);
+    return response.data;
   }
 );
 
-export const updateTerminal = createAsyncThunk(
-  'merchant/updateTerminal',
-  async (
-    { id, ...updateData }: { id: string } & Partial<Terminal>,
-    { rejectWithValue }
-  ) => {
-    try {
-      const response = await api.put(`/terminals/${id}`, updateData);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || 'Failed to update terminal'
-      );
-    }
+export const deleteMerchant = createAsyncThunk(
+  'merchants/deleteMerchant',
+  async (id: string) => {
+    const response = await api.delete(`/merchants/${id}`);
+    return response.data;
   }
 );
 
+export const onboardMerchant = createAsyncThunk(
+  'merchants/onboardMerchant',
+  async (onboardingData: any) => {
+    const response = await api.post('/merchants/onboard', onboardingData);
+    return response.data;
+  }
+);
+
+export const searchMerchants = createAsyncThunk(
+  'merchants/searchMerchants',
+  async ({ query, limit = 10 }: { query: string; limit?: number }) => {
+    const response = await api.get('/merchants/search', {
+      params: { q: query, limit },
+    });
+    return response.data;
+  }
+);
+
+// Slice
 const merchantSlice = createSlice({
-  name: 'merchant',
+  name: 'merchants',
   initialState,
   reducers: {
+    setFilters: (state, action: PayloadAction<Partial<MerchantFilters>>) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
     clearError: (state) => {
       state.error = null;
     },
-    setMerchant: (state, action: PayloadAction<Merchant>) => {
-      state.merchant = action.payload;
+    resetMerchants: (state) => initialState,
+    setCurrentMerchant: (state, action: PayloadAction<Merchant | null>) => {
+      state.currentMerchant = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Get Merchant Profile
-      .addCase(getMerchantProfile.pending, (state) => {
+      // Get merchants
+      .addCase(getMerchants.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(getMerchantProfile.fulfilled, (state, action) => {
+      .addCase(getMerchants.fulfilled, (state, action) => {
         state.loading = false;
-        state.merchant = action.payload;
+        state.merchants = action.payload.data;
+        state.total = action.payload.total;
+        state.page = action.payload.page;
+        state.limit = action.payload.limit;
       })
-      .addCase(getMerchantProfile.rejected, (state, action) => {
+      .addCase(getMerchants.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.error.message || 'Failed to fetch merchants';
       })
-      // Get Outlets
-      .addCase(getOutlets.pending, (state) => {
+      // Get merchant by ID
+      .addCase(getMerchantById.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(getOutlets.fulfilled, (state, action) => {
+      .addCase(getMerchantById.fulfilled, (state, action) => {
         state.loading = false;
-        state.outlets = action.payload;
+        state.currentMerchant = action.payload;
       })
-      .addCase(getOutlets.rejected, (state, action) => {
+      .addCase(getMerchantById.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.error.message || 'Failed to fetch merchant';
       })
-      // Create Outlet
-      .addCase(createOutlet.pending, (state) => {
+      // Get my merchant
+      .addCase(getMyMerchant.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(createOutlet.fulfilled, (state, action) => {
+      .addCase(getMyMerchant.fulfilled, (state, action) => {
         state.loading = false;
-        state.outlets.push(action.payload);
+        state.currentMerchant = action.payload;
       })
-      .addCase(createOutlet.rejected, (state, action) => {
+      .addCase(getMyMerchant.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.error = action.error.message || 'Failed to fetch merchant';
       })
-      // Update Outlet
-      .addCase(updateOutlet.fulfilled, (state, action) => {
-        const index = state.outlets.findIndex(
-          (outlet) => outlet.id === action.payload.id
+      // Get merchant stats
+      .addCase(getMerchantStats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getMerchantStats.fulfilled, (state, action) => {
+        state.loading = false;
+        state.merchantStats = action.payload;
+      })
+      .addCase(getMerchantStats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch merchant stats';
+      })
+      // Create merchant
+      .addCase(createMerchant.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createMerchant.fulfilled, (state, action) => {
+        state.loading = false;
+        state.merchants.unshift(action.payload);
+      })
+      .addCase(createMerchant.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to create merchant';
+      })
+      // Update merchant
+      .addCase(updateMerchant.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateMerchant.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.merchants.findIndex(
+          (m) => m.id === action.payload.id
         );
         if (index !== -1) {
-          state.outlets[index] = action.payload;
+          state.merchants[index] = action.payload;
+        }
+        if (state.currentMerchant?.id === action.payload.id) {
+          state.currentMerchant = action.payload;
         }
       })
-      // Get Terminals
-      .addCase(getTerminals.pending, (state) => {
+      .addCase(updateMerchant.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to update merchant';
+      })
+      // Delete merchant
+      .addCase(deleteMerchant.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(getTerminals.fulfilled, (state, action) => {
+      .addCase(deleteMerchant.fulfilled, (state, action) => {
         state.loading = false;
-        state.terminals = action.payload;
-      })
-      .addCase(getTerminals.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Create Terminal
-      .addCase(createTerminal.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createTerminal.fulfilled, (state, action) => {
-        state.loading = false;
-        state.terminals.push(action.payload);
-      })
-      .addCase(createTerminal.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      // Update Terminal
-      .addCase(updateTerminal.fulfilled, (state, action) => {
-        const index = state.terminals.findIndex(
-          (terminal) => terminal.id === action.payload.id
+        state.merchants = state.merchants.filter(
+          (m) => m.id !== action.meta.arg
         );
-        if (index !== -1) {
-          state.terminals[index] = action.payload;
-        }
+      })
+      .addCase(deleteMerchant.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to delete merchant';
+      })
+      // Onboard merchant
+      .addCase(onboardMerchant.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(onboardMerchant.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentMerchant = action.payload;
+      })
+      .addCase(onboardMerchant.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to onboard merchant';
+      })
+      // Search merchants
+      .addCase(searchMerchants.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(searchMerchants.fulfilled, (state, action) => {
+        state.loading = false;
+        state.merchants = action.payload;
+      })
+      .addCase(searchMerchants.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to search merchants';
       });
   },
 });
 
-export const { clearError, setMerchant } = merchantSlice.actions;
+export const { setFilters, clearError, resetMerchants, setCurrentMerchant } =
+  merchantSlice.actions;
 export default merchantSlice.reducer;

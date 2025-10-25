@@ -583,7 +583,7 @@ async function main() {
     },
   ];
 
-  const createdOutlets = [];
+  const createdOutlets: any[] = [];
   for (const outletData of outlets) {
     const outlet = await prisma.outlet.create({
       data: outletData,

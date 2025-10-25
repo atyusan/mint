@@ -11,6 +11,8 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { FeesModule } from './fees/fees.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { MerchantsModule } from './merchants/merchants.module';
+import { OutletsModule } from './outlets/outlets.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { PrismaModule } from './prisma/prisma.module';
     AnalyticsModule,
     FeesModule,
     WebhooksModule,
+    MerchantsModule,
+    OutletsModule,
   ],
 })
 export class AppModule {}
