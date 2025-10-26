@@ -592,12 +592,59 @@ async function main() {
   }
 
   // Create demo terminals
+  // Create terminal models first
+  console.log('📱 Creating terminal models...');
+  const terminalModels = [
+    {
+      name: 'Paystack Terminal Pro',
+      code: 'PRO',
+      description:
+        'Premium payment terminal with large display and NFC capabilities',
+      isActive: true,
+    },
+    {
+      name: 'Paystack Terminal Lite',
+      code: 'LITE',
+      description: 'Lightweight payment terminal for small businesses',
+      isActive: true,
+    },
+    {
+      name: 'Paystack Terminal Mini',
+      code: 'MINI',
+      description: 'Compact mobile payment terminal',
+      isActive: true,
+    },
+    {
+      name: 'Pro 2',
+      code: 'PRO2',
+      description: 'Second generation premium terminal with enhanced features',
+      isActive: true,
+    },
+  ];
+
+  const createdModels: any[] = [];
+  for (const modelData of terminalModels) {
+    const model = await prisma.terminalModel.create({
+      data: modelData,
+    });
+    createdModels.push(model);
+  }
+
+  // Helper function to find model ID by name
+  const findModelId = (name: string) => {
+    const model = createdModels.find((m) => m.name === name);
+    if (!model) {
+      throw new Error(`Terminal model not found: ${name}`);
+    }
+    return model.id;
+  };
+
   console.log('💳 Creating demo terminals...');
   const terminals = [
     {
       outletId: createdOutlets[0].id,
       serialNumber: 'TERM001',
-      model: 'Paystack Terminal Pro',
+      modelId: findModelId('Paystack Terminal Pro'),
       status: 'ACTIVE' as const,
       location: 'Counter 1',
       isOnline: true,
@@ -606,7 +653,7 @@ async function main() {
     {
       outletId: createdOutlets[0].id,
       serialNumber: 'TERM002',
-      model: 'Paystack Terminal Lite',
+      modelId: findModelId('Paystack Terminal Lite'),
       status: 'ACTIVE' as const,
       location: 'Counter 2',
       isOnline: false,
@@ -615,7 +662,7 @@ async function main() {
     {
       outletId: createdOutlets[1].id,
       serialNumber: 'TERM003',
-      model: 'Paystack Terminal Pro',
+      modelId: findModelId('Paystack Terminal Pro'),
       status: 'ACTIVE' as const,
       location: 'Main Counter',
       isOnline: true,
@@ -626,6 +673,170 @@ async function main() {
   for (const terminalData of terminals) {
     await prisma.terminal.create({
       data: terminalData,
+    });
+  }
+
+  // Create terminal inventory
+  console.log('📦 Creating terminal inventory...');
+  const inventoryItems = [
+    {
+      serialNumber: 'INV-TERM-101',
+      modelId: findModelId('Paystack Terminal Pro'),
+      status: 'IN_STOCK' as const,
+      cost: 50000,
+      supplier: 'Paystack Nigeria',
+      receivedDate: new Date(Date.now() - 7 * 24 * 3600000), // 1 week ago
+      warrantyExpiry: new Date(Date.now() + 365 * 24 * 3600000 * 2), // 2 years
+    },
+    {
+      serialNumber: 'INV-TERM-102',
+      modelId: findModelId('Paystack Terminal Pro'),
+      status: 'IN_STOCK' as const,
+      cost: 50000,
+      supplier: 'Paystack Nigeria',
+      receivedDate: new Date(Date.now() - 7 * 24 * 3600000),
+      warrantyExpiry: new Date(Date.now() + 365 * 24 * 3600000 * 2),
+    },
+    {
+      serialNumber: 'INV-TERM-103',
+      modelId: findModelId('Paystack Terminal Lite'),
+      status: 'IN_STOCK' as const,
+      cost: 35000,
+      supplier: 'Paystack Nigeria',
+      receivedDate: new Date(Date.now() - 5 * 24 * 3600000), // 5 days ago
+      warrantyExpiry: new Date(Date.now() + 365 * 24 * 3600000 * 2),
+    },
+    {
+      serialNumber: 'INV-TERM-104',
+      modelId: findModelId('Paystack Terminal Lite'),
+      status: 'IN_STOCK' as const,
+      cost: 35000,
+      supplier: 'Paystack Nigeria',
+      receivedDate: new Date(Date.now() - 5 * 24 * 3600000),
+      warrantyExpiry: new Date(Date.now() + 365 * 24 * 3600000 * 2),
+    },
+    {
+      serialNumber: 'INV-TERM-105',
+      modelId: findModelId('Paystack Terminal Mini'),
+      status: 'IN_STOCK' as const,
+      cost: 25000,
+      supplier: 'Paystack Nigeria',
+      receivedDate: new Date(Date.now() - 3 * 24 * 3600000), // 3 days ago
+      warrantyExpiry: new Date(Date.now() + 365 * 24 * 3600000 * 2),
+    },
+    {
+      serialNumber: 'INV-TERM-106',
+      modelId: findModelId('Pro 2'),
+      status: 'IN_STOCK' as const,
+      cost: 45000,
+      supplier: 'Paystack Nigeria',
+      receivedDate: new Date(Date.now() - 1 * 24 * 3600000), // 1 day ago
+      warrantyExpiry: new Date(Date.now() + 365 * 24 * 3600000 * 2),
+    },
+  ];
+
+  const createdInventory: any[] = [];
+  for (const item of inventoryItems) {
+    const inventory = await prisma.terminalInventory.create({
+      data: item,
+    });
+    createdInventory.push(inventory);
+  }
+
+  // Create terminal requests
+  console.log('📝 Creating terminal requests...');
+  const terminalRequests = [
+    {
+      outletId: createdOutlets[0].id,
+      merchantId: merchant.id,
+      requestedBy: merchant.userId,
+      quantity: 2,
+      modelId: findModelId('Paystack Terminal Pro'),
+      location: 'Main Counter',
+      status: 'PENDING' as const,
+      notes: 'Need additional terminals for new counter',
+    },
+    {
+      outletId: createdOutlets[1].id,
+      merchantId: merchant.id,
+      requestedBy: merchant.userId,
+      quantity: 1,
+      modelId: findModelId('Paystack Terminal Lite'),
+      location: 'Express Checkout',
+      status: 'APPROVED' as const,
+      notes: 'Express checkout counter',
+      approvedBy: adminUser.id,
+      approvedAt: new Date(Date.now() - 2 * 24 * 3600000), // 2 days ago
+    },
+    {
+      outletId: createdOutlets[0].id,
+      merchantId: merchant.id,
+      requestedBy: merchant.userId,
+      quantity: 3,
+      modelId: findModelId('Paystack Terminal Mini'),
+      location: 'Mobile Stations',
+      status: 'REJECTED' as const,
+      notes: 'Requested too many terminals',
+      approvedBy: adminUser.id,
+      approvedAt: new Date(Date.now() - 5 * 24 * 3600000), // 5 days ago
+      rejectionReason: 'Insufficient justification for quantity',
+    },
+  ];
+
+  const createdRequests: any[] = [];
+  for (const request of terminalRequests) {
+    const terminalRequest = await prisma.terminalRequest.create({
+      data: request,
+    });
+    createdRequests.push(terminalRequest);
+  }
+
+  // Fulfill the approved request
+  if (createdRequests.length > 1) {
+    const approvedRequest = createdRequests[1]; // The APPROVED request
+    const availableInventory = createdInventory
+      .filter(
+        (inv) =>
+          inv.modelId === approvedRequest.modelId && inv.status === 'IN_STOCK'
+      )
+      .slice(0, approvedRequest.quantity);
+
+    for (const inv of availableInventory) {
+      // Mark inventory as allocated
+      await prisma.terminalInventory.update({
+        where: { id: inv.id },
+        data: { status: 'ALLOCATED' },
+      });
+
+      // Create allocation record
+      await prisma.terminalAllocation.create({
+        data: {
+          terminalInventoryId: inv.id,
+          terminalRequestId: approvedRequest.id,
+          allocatedBy: adminUser.id,
+        },
+      });
+
+      // Create terminal record
+      await prisma.terminal.create({
+        data: {
+          outletId: approvedRequest.outletId,
+          terminalRequestId: approvedRequest.id,
+          modelId: inv.modelId,
+          serialNumber: inv.serialNumber,
+          location: approvedRequest.location,
+          status: 'ACTIVE',
+        },
+      });
+    }
+
+    // Mark request as fulfilled
+    await prisma.terminalRequest.update({
+      where: { id: approvedRequest.id },
+      data: {
+        status: 'FULFILLED',
+        fulfilledAt: new Date(),
+      },
     });
   }
 
@@ -820,7 +1031,11 @@ async function main() {
   console.log(`- Created 1 admin user (admin@mintplatform.com)`);
   console.log(`- Created 1 demo merchant (merchant@demo.com)`);
   console.log(`- Created ${outlets.length} demo outlets`);
-  console.log(`- Created ${terminals.length} demo terminals`);
+  console.log(
+    `- Created ${terminals.length + 1} demo terminals (including fulfilled request)`
+  );
+  console.log(`- Created ${inventoryItems.length} inventory items`);
+  console.log(`- Created ${terminalRequests.length} terminal requests`);
   console.log(`- Created ${invoices.length} demo invoices`);
   console.log(`- Created ${systemConfigs.length} system configurations`);
   console.log('\n🔐 Default credentials:');

@@ -28,6 +28,7 @@ import {
   Person as PersonIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
+  Store as StoreIcon,
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/store';
@@ -75,6 +76,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { text: 'Reports', icon: <ReportsIcon />, path: '/reports' },
     { text: 'Payouts', icon: <AccountBalanceIcon />, path: '/payouts' },
     { text: 'Merchants', icon: <BusinessIcon />, path: '/merchants' },
+    { text: 'Outlets', icon: <StoreIcon />, path: '/outlets' },
     { text: 'My Profile', icon: <PersonIcon />, path: '/merchant-profile' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];

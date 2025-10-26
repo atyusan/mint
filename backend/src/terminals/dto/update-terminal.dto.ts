@@ -4,7 +4,7 @@ import { TerminalStatus } from '@prisma/client';
 export class UpdateTerminalDto {
   @IsOptional()
   @IsString()
-  model?: string;
+  modelId?: string;
 
   @IsOptional()
   @IsEnum(TerminalStatus)

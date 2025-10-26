@@ -139,10 +139,11 @@ model Merchant {
   updatedAt          DateTime @updatedAt
 
   // Relations
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  outlets      Outlet[]
-  payouts      Payout[]
-  PayoutMethod PayoutMethod[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outlets          Outlet[]
+  payouts          Payout[]
+  PayoutMethod     PayoutMethod[]
+  terminalRequests TerminalRequest[]
 
   @@map("merchants")
 }
@@ -179,9 +180,10 @@ model Outlet {
   updatedAt  DateTime @updatedAt
 
   // Relations
-  merchant  Merchant   @relation(fields: [merchantId], references: [id], onDelete: Cascade)
-  terminals Terminal[]
-  invoices  Invoice[]
+  merchant         Merchant          @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  terminals        Terminal[]
+  invoices         Invoice[]
+  terminalRequests TerminalRequest[]
 
   @@map("outlets")
 }
@@ -196,26 +198,126 @@ enum TerminalStatus {
   LOST
 }
 
-model Terminal {
-  id              String         @id @default(cuid())
-  outletId        String
-  serialNumber    String         @unique
-  model           String
-  status          TerminalStatus @default(ACTIVE)
-  location        String?
-  lastSeenAt      DateTime?
-  firmwareVersion String?
-  batteryLevel    Int?
-  isOnline        Boolean        @default(false)
-  metadata        Json?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+// ===== TERMINAL MODEL & INVENTORY =====
+
+model TerminalModel {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String?  @unique // Short code for reference
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  outlet   Outlet    @relation(fields: [outletId], references: [id], onDelete: Cascade)
-  invoices Invoice[]
+  inventory TerminalInventory[]
+  terminals Terminal[]
+  requests  TerminalRequest[]
+
+  @@map("terminal_models")
+}
+
+model Terminal {
+  id                String         @id @default(cuid())
+  outletId          String
+  modelId           String
+  terminalRequestId String?
+  serialNumber      String         @unique
+  status            TerminalStatus @default(ACTIVE)
+  location          String?
+  lastSeenAt        DateTime?
+  firmwareVersion   String?
+  batteryLevel      Int?
+  isOnline          Boolean        @default(false)
+  metadata          Json?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  // Relations
+  outlet          Outlet           @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  model           TerminalModel    @relation(fields: [modelId], references: [id])
+  terminalRequest TerminalRequest? @relation(fields: [terminalRequestId], references: [id])
+  invoices        Invoice[]
 
   @@map("terminals")
+}
+
+enum InventoryStatus {
+  IN_STOCK
+  RESERVED
+  ALLOCATED
+  MAINTENANCE
+  RETIRED
+}
+
+model TerminalInventory {
+  id             String          @id @default(cuid())
+  serialNumber   String          @unique
+  modelId        String
+  status         InventoryStatus @default(IN_STOCK)
+  cost           Decimal?        @db.Decimal(10, 2)
+  receivedDate   DateTime?
+  supplier       String?
+  warrantyExpiry DateTime?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relations
+  model            TerminalModel        @relation(fields: [modelId], references: [id])
+  terminalRequests TerminalAllocation[]
+
+  @@map("terminal_inventory")
+}
+
+enum TerminalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+  CANCELLED
+}
+
+model TerminalRequest {
+  id              String                @id @default(cuid())
+  outletId        String
+  merchantId      String
+  requestedBy     String
+  quantity        Int
+  modelId         String
+  location        String?
+  status          TerminalRequestStatus @default(PENDING)
+  notes           String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  fulfilledAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  // Relations
+  outlet      Outlet               @relation(fields: [outletId], references: [id], onDelete: Cascade)
+  merchant    Merchant             @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  model       TerminalModel        @relation(fields: [modelId], references: [id])
+  terminals   Terminal[]
+  allocations TerminalAllocation[]
+
+  @@map("terminal_requests")
+}
+
+model TerminalAllocation {
+  id                  String   @id @default(cuid())
+  terminalInventoryId String
+  terminalRequestId   String
+  allocatedAt         DateTime @default(now())
+  allocatedBy         String
+
+  // Relations
+  terminalInventory TerminalInventory @relation(fields: [terminalInventoryId], references: [id])
+  terminalRequest   TerminalRequest   @relation(fields: [terminalRequestId], references: [id])
+
+  @@unique([terminalInventoryId, terminalRequestId])
+  @@map("terminal_allocations")
 }
 
 // ===== PAYMENT CATEGORIES =====

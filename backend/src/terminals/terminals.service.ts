@@ -108,6 +108,13 @@ export class TerminalsService {
               },
             },
           },
+          model: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -136,6 +143,13 @@ export class TerminalsService {
                 user: true,
               },
             },
+          },
+        },
+        model: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
           },
         },
         invoices: {
@@ -175,6 +189,13 @@ export class TerminalsService {
             },
           },
         },
+        model: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
       },
     });
 
@@ -209,6 +230,13 @@ export class TerminalsService {
                 user: true,
               },
             },
+          },
+        },
+        model: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
           },
         },
       },
@@ -263,6 +291,13 @@ export class TerminalsService {
             },
           },
         },
+        model: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
       },
     });
 
@@ -293,6 +328,13 @@ export class TerminalsService {
                 user: true,
               },
             },
+          },
+        },
+        model: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
           },
         },
       },

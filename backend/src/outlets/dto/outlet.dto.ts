@@ -103,6 +103,10 @@ export class UpdateOutletDto {
 
   @IsString()
   @IsOptional()
+  merchantId?: string;
+
+  @IsString()
+  @IsOptional()
   isActive?: boolean;
 }
 

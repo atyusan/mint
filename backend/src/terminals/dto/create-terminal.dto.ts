@@ -12,7 +12,7 @@ export class CreateTerminalDto {
 
   @IsString()
   @IsNotEmpty()
-  model: string;
+  modelId: string;
 
   @IsOptional()
   @IsEnum(TerminalStatus)

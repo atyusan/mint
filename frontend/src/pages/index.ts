@@ -6,3 +6,4 @@ export { default as PayoutsPage } from './PayoutsPage';
 export { default as MerchantsPage } from './MerchantsPage';
 export { default as MerchantProfilePage } from './MerchantProfilePage';
 export { default as MerchantOnboardingPage } from './MerchantOnboardingPage';
+export { default as OutletsPage } from './OutletsPage';

@@ -13,6 +13,9 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { MerchantsModule } from './merchants/merchants.module';
 import { OutletsModule } from './outlets/outlets.module';
+import { TerminalRequestsModule } from './terminal-requests/terminal-requests.module';
+import { TerminalInventoryModule } from './terminal-inventory/terminal-inventory.module';
+import { TerminalModelsModule } from './terminal-models/terminal-models.module';
 
 @Module({
   imports: [
@@ -37,6 +40,9 @@ import { OutletsModule } from './outlets/outlets.module';
     WebhooksModule,
     MerchantsModule,
     OutletsModule,
+    TerminalRequestsModule,
+    TerminalInventoryModule,
+    TerminalModelsModule,
   ],
 })
 export class AppModule {}

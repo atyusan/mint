@@ -402,7 +402,7 @@ export class AnalyticsService {
       return {
         id: terminal.id,
         serialNumber: terminal.serialNumber,
-        model: terminal.model,
+        modelId: terminal.modelId,
         status: terminal.status,
         location: terminal.location,
         outlet: terminal.outlet,

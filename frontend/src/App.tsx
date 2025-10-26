@@ -24,6 +24,7 @@ import {
   MerchantsPage,
   MerchantProfilePage,
   MerchantOnboardingPage,
+  OutletsPage,
 } from './pages';
 
 const theme = createTheme({
@@ -71,6 +72,7 @@ const AppRoutes: React.FC = () => {
         <Route path='/reports' element={<ReportsPage />} />
         <Route path='/payouts' element={<PayoutsPage />} />
         <Route path='/merchants' element={<MerchantsPage />} />
+        <Route path='/outlets' element={<OutletsPage />} />
         <Route path='/merchant-profile' element={<MerchantProfilePage />} />
         <Route
           path='/merchant-onboarding'
